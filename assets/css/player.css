@@ -1,14 +1,14 @@
-.sdsp-player-wrap {
-    --plyr-color-main: var(--sdsp-color, #c9a130);
+.sply-player-wrap {
+    --plyr-color-main: var(--sply-color, #c9a130);
     max-width: 100%;
 }
 
-.sdsp-player-wrap .plyr {
+.sply-player-wrap .plyr {
     border-radius: 8px;
     overflow: hidden;
 }
 
-.sdsp-player-wrap video::-webkit-media-controls-download-button,
-.sdsp-player-wrap video::-internal-media-controls-download-button {
+.sply-player-wrap video::-webkit-media-controls-download-button,
+.sply-player-wrap video::-internal-media-controls-download-button {
     display: none;
 }

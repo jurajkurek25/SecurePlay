@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  * export, a compromised read-replica) doesn't hand out playable keys —
  * an attacker also needs the wp-config.php secret.
  */
-final class SDSP_Crypto
+final class SPLY_Crypto
 {
     const CIPHER = 'aes-256-cbc';
 
@@ -24,7 +24,7 @@ final class SDSP_Crypto
         // still works (rather than fatal-erroring), while a site admin who
         // installs real salts automatically gets a stronger derived key.
         if ($secret === '' || strpos($secret, 'put your unique phrase here') !== false) {
-            $secret = 'sdsp-fallback-' . site_url();
+            $secret = 'sply-fallback-' . site_url();
         }
 
         return hash('sha256', $secret, true);

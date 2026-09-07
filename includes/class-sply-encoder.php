@@ -11,11 +11,11 @@ if (!defined('ABSPATH')) {
  * and deleted immediately after encoding — neither ever needs to persist
  * on disk once the .m3u8/.ts segments exist.
  */
-final class SDSP_Encoder
+final class SPLY_Encoder
 {
     public static function ffmpeg_binary(): string
     {
-        return (string) SDSP_Settings::get('ffmpeg_path');
+        return (string) SPLY_Settings::get('ffmpeg_path');
     }
 
     public static function ffmpeg_available(): bool
@@ -34,11 +34,11 @@ final class SDSP_Encoder
     public static function encode(string $sourcePath, string $outputDir, int $postId)
     {
         if (!self::ffmpeg_available()) {
-            return new WP_Error('sdsp_no_ffmpeg', __('ffmpeg nie je na tomto serveri dostupný.', 'secure-player'));
+            return new WP_Error('sply_no_ffmpeg', __('ffmpeg is not available on this server.', 'secureplay'));
         }
 
         if (!wp_mkdir_p($outputDir)) {
-            return new WP_Error('sdsp_mkdir_failed', __('Nepodarilo sa vytvoriť pracovný priečinok.', 'secure-player'));
+            return new WP_Error('sply_mkdir_failed', __('Could not create a working directory.', 'secureplay'));
         }
 
         $rawKey = random_bytes(16);
@@ -46,13 +46,13 @@ final class SDSP_Encoder
 
         $keyPath = $outputDir . '/key.bin';
         $keyInfoPath = $outputDir . '/key.info';
-        $placeholderUri = 'sdsp://key-placeholder/' . $postId;
+        $placeholderUri = 'sply://key-placeholder/' . $postId;
 
         file_put_contents($keyPath, $rawKey);
         file_put_contents($keyInfoPath, $placeholderUri . "\n" . $keyPath . "\n" . $iv . "\n");
 
         $manifestPath = $outputDir . '/index.m3u8';
-        $segmentDuration = max(2, (int) SDSP_Settings::get('segment_duration'));
+        $segmentDuration = max(2, (int) SPLY_Settings::get('segment_duration'));
 
         $cmd = sprintf(
             '%s -y -i %s -c:v libx264 -c:a aac -hls_time %d -hls_key_info_file %s -hls_playlist_type vod -hls_segment_filename %s %s 2>&1',
@@ -74,11 +74,11 @@ final class SDSP_Encoder
 
         if ($exitCode !== 0 || !file_exists($manifestPath)) {
             self::cleanup_dir($outputDir);
-            return new WP_Error('sdsp_encode_failed', __('Kódovanie videa zlyhalo.', 'secure-player') . ' ' . implode("\n", array_slice($output, -10)));
+            return new WP_Error('sply_encode_failed', __('Video encoding failed.', 'secureplay') . ' ' . implode("\n", array_slice($output, -10)));
         }
 
         $manifest = file_get_contents($manifestPath);
-        $manifest = str_replace($placeholderUri, admin_url('admin-ajax.php') . '?action=sdsp_key&post=' . $postId, $manifest);
+        $manifest = str_replace($placeholderUri, admin_url('admin-ajax.php') . '?action=sply_key&post=' . $postId, $manifest);
         file_put_contents($manifestPath, $manifest);
 
         self::extract_thumbnail($sourcePath, $outputDir . '/thumbnail.jpg');

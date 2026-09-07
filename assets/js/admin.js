@@ -2,19 +2,19 @@
     "use strict";
 
     $(function () {
-        $(".sdsp-color-field").wpColorPicker();
+        $(".sply-color-field").wpColorPicker();
 
-        $("#sdsp-activate-license").on("click", function () {
+        $("#sply-activate-license").on("click", function () {
             var $btn = $(this);
-            var $msg = $("#sdsp-license-message");
-            var key = $("#sdsp_license_key").val();
+            var $msg = $("#sply-license-message");
+            var key = $("#sply_license_key").val();
 
             $btn.prop("disabled", true);
             $msg.text("…");
 
-            $.post(sdspAdmin.ajaxUrl, {
-                action: "sdsp_activate_license",
-                nonce: sdspAdmin.nonce,
+            $.post(splyAdmin.ajaxUrl, {
+                action: "sply_activate_license",
+                nonce: splyAdmin.nonce,
                 license_key: key,
             })
                 .done(function (res) {
@@ -24,44 +24,44 @@
                     }
                 })
                 .fail(function () {
-                    $msg.text("Nastala chyba, skús to prosím znova.");
+                    $msg.text("Something went wrong, please try again.");
                 })
                 .always(function () {
                     $btn.prop("disabled", false);
                 });
         });
 
-        $("#sdsp-deactivate-license").on("click", function () {
+        $("#sply-deactivate-license").on("click", function () {
             var $btn = $(this);
             $btn.prop("disabled", true);
 
-            $.post(sdspAdmin.ajaxUrl, {
-                action: "sdsp_deactivate_license",
-                nonce: sdspAdmin.nonce,
+            $.post(splyAdmin.ajaxUrl, {
+                action: "sply_deactivate_license",
+                nonce: splyAdmin.nonce,
             }).always(function () {
                 window.location.reload();
             });
         });
 
-        $("#sdsp-save-settings").on("click", function () {
+        $("#sply-save-settings").on("click", function () {
             var $btn = $(this);
-            var $msg = $("#sdsp-settings-message");
+            var $msg = $("#sply-settings-message");
 
             $btn.prop("disabled", true);
             $msg.text("…");
 
-            $.post(sdspAdmin.ajaxUrl, {
-                action: "sdsp_save_settings",
-                nonce: sdspAdmin.nonce,
-                default_color: $("#sdsp_default_color").val(),
-                segment_duration: $("#sdsp_segment_duration").val(),
-                ffmpeg_path: $("#sdsp_ffmpeg_path").val(),
+            $.post(splyAdmin.ajaxUrl, {
+                action: "sply_save_settings",
+                nonce: splyAdmin.nonce,
+                default_color: $("#sply_default_color").val(),
+                segment_duration: $("#sply_segment_duration").val(),
+                ffmpeg_path: $("#sply_ffmpeg_path").val(),
             })
                 .done(function (res) {
                     $msg.text(res.data && res.data.message ? res.data.message : "");
                 })
                 .fail(function () {
-                    $msg.text("Nastala chyba, skús to prosím znova.");
+                    $msg.text("Something went wrong, please try again.");
                 })
                 .always(function () {
                     $btn.prop("disabled", false);

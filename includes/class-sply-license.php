@@ -17,15 +17,15 @@ if (!defined('ABSPATH')) {
  * tick would burn a "seat" and eventually lock the paying customer out of
  * their own site).
  */
-final class SDSP_License
+final class SPLY_License
 {
     const PRODUCT_ID = '5kO1gjKF7HCv2QARDaMh9g==';
     const VERIFY_URL = 'https://api.gumroad.com/v2/licenses/verify';
     const MAX_SEATS = 1;
 
-    const OPTION_KEY = 'sdsp_license_key';
-    const OPTION_STATUS = 'sdsp_license_status';
-    const OPTION_EMAIL = 'sdsp_license_email';
+    const OPTION_KEY = 'sply_license_key';
+    const OPTION_STATUS = 'sply_license_status';
+    const OPTION_EMAIL = 'sply_license_email';
 
     private static ?self $instance = null;
 
@@ -39,7 +39,7 @@ final class SDSP_License
 
     public function register_hooks(): void
     {
-        add_action('sdsp_license_cron_check', [$this, 'recheck']);
+        add_action('sply_license_cron_check', [$this, 'recheck']);
     }
 
     public static function key(): string
@@ -59,7 +59,7 @@ final class SDSP_License
     {
         $licenseKey = trim($licenseKey);
         if ($licenseKey === '') {
-            return ['success' => false, 'message' => __('Zadaj licenčný kľúč.', 'secure-player')];
+            return ['success' => false, 'message' => __('Enter a license key.', 'secureplay')];
         }
 
         $isOwnPriorActivation = ($licenseKey === self::key()) && self::is_active();
@@ -73,7 +73,7 @@ final class SDSP_License
         update_option(self::OPTION_STATUS, 'active');
         update_option(self::OPTION_EMAIL, $result['email'] ?? '');
 
-        return ['success' => true, 'message' => __('Licencia bola aktivovaná.', 'secure-player')];
+        return ['success' => true, 'message' => __('License activated.', 'secureplay')];
     }
 
     public function deactivate(): void
@@ -117,22 +117,22 @@ final class SDSP_License
         if (!is_array($body) || empty($body['success'])) {
             $message = is_array($body) && !empty($body['message'])
                 ? $body['message']
-                : __('Licenčný kľúč sa nepodarilo overiť.', 'secure-player');
+                : __('Could not verify this license key.', 'secureplay');
             return ['success' => false, 'message' => $message];
         }
 
         $purchase = $body['purchase'] ?? [];
         if (!empty($purchase['refunded']) || !empty($purchase['chargebacked'])) {
-            return ['success' => false, 'message' => __('Táto licencia bola vrátená alebo zrušená.', 'secure-player')];
+            return ['success' => false, 'message' => __('This license has been refunded or charged back.', 'secureplay')];
         }
         if (!empty($purchase['subscription_cancelled_at'])) {
-            return ['success' => false, 'message' => __('Predplatné pre túto licenciu bolo zrušené.', 'secure-player')];
+            return ['success' => false, 'message' => __('The subscription for this license has been cancelled.', 'secureplay')];
         }
 
         $uses = isset($body['uses']) ? (int) $body['uses'] : 1;
         $isOwnPriorActivation = ($licenseKey === self::key()) && self::is_active();
         if ($uses > self::MAX_SEATS && !$isOwnPriorActivation) {
-            return ['success' => false, 'message' => __('Táto licencia je už aktívna na inej stránke.', 'secure-player')];
+            return ['success' => false, 'message' => __('This license is already active on another site.', 'secureplay')];
         }
 
         return ['success' => true, 'message' => 'ok', 'email' => $purchase['email'] ?? ''];

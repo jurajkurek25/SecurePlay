@@ -2,7 +2,7 @@
     "use strict";
 
     function initPlayer(video) {
-        var src = video.getAttribute("data-sdsp-src");
+        var src = video.getAttribute("data-sply-src");
         if (!src) {
             return;
         }
@@ -38,7 +38,7 @@
     }
 
     function init() {
-        var videos = document.querySelectorAll(".sdsp-player[data-sdsp-src]");
+        var videos = document.querySelectorAll(".sply-player[data-sply-src]");
         videos.forEach(initPlayer);
     }
 

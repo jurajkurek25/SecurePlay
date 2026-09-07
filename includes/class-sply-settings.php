@@ -4,10 +4,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/** Thin wrapper around a single `sdsp_settings` option. */
-final class SDSP_Settings
+/** Thin wrapper around a single `sply_settings` option. */
+final class SPLY_Settings
 {
-    const OPTION_KEY = 'sdsp_settings';
+    const OPTION_KEY = 'sply_settings';
 
     public static function defaults(): array
     {
