@@ -5,9 +5,6 @@ packaged as AES-128 encrypted HLS, and the decryption key is only ever
 handed to visitors your site allows — the `.m3u8`/`.ts` files themselves
 can sit in public `wp-content/uploads/` and be useless without the key.
 
-This mirrors the same protection model used by [strhnidav](https://github.com/jurajkurek25/strhnidav)'s
-lesson player, adapted to a distributable WordPress plugin.
-
 ## What this protects against, and what it doesn't
 
 This is **protection against casual downloading and link-sharing**, not
