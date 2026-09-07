@@ -59,6 +59,7 @@ final class SPLY_Shortcode
 
         $thumbnailUrl = SPLY_Post_Type::thumbnail_url($postId);
         $elementId = 'sply-player-' . $postId;
+        $watermark = SPLY_Settings::get('watermark_enabled') ? $this->watermark_identity($postId) : '';
 
         ob_start();
         ?>
@@ -73,10 +74,34 @@ final class SPLY_Shortcode
                 oncontextmenu="return false;"
                 <?php if ($thumbnailUrl) : ?>poster="<?php echo esc_url($thumbnailUrl); ?>"<?php endif; ?>
                 data-sply-src="<?php echo esc_url($manifestUrl); ?>"
+                <?php if ($watermark !== '') : ?>data-sply-watermark="<?php echo esc_attr($watermark); ?>"<?php endif; ?>
             ></video>
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * The identity burned into the on-screen watermark. Defaults to the
+     * logged-in viewer's email; returns '' (no watermark) for anonymous
+     * visitors unless a site owner supplies one — e.g. a WooCommerce
+     * order email for a non-account checkout — via the
+     * `sply_watermark_identity` filter.
+     *
+     * This is a leak deterrent, not a download blocker: it doesn't stop
+     * screen recording, it just makes a leaked video traceable back to
+     * whoever watched it.
+     */
+    private function watermark_identity(int $postId): string
+    {
+        $identity = '';
+        $userId = get_current_user_id();
+        if ($userId) {
+            $user = get_userdata($userId);
+            $identity = $user ? $user->user_email : '';
+        }
+
+        return (string) apply_filters('sply_watermark_identity', $identity, $postId, $userId);
     }
 
     private function enqueue_assets(): void

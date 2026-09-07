@@ -35,6 +35,51 @@
         video.addEventListener("contextmenu", function (e) {
             e.preventDefault();
         });
+
+        initWatermark(video);
+    }
+
+    // Shifts position every few seconds so a crop can't reliably remove
+    // it. This is a leak deterrent (trace a leaked video back to who
+    // watched it), not a way to block screen recording — nothing running
+    // in the browser can do that.
+    function initWatermark(video) {
+        var text = video.getAttribute("data-sply-watermark");
+        if (!text) {
+            return;
+        }
+
+        var wrap = video.closest(".sply-player-wrap");
+        if (!wrap) {
+            return;
+        }
+
+        var mark = document.createElement("div");
+        mark.className = "sply-watermark";
+        mark.textContent = text;
+        wrap.appendChild(mark);
+
+        // Percent positions, kept out of the bottom ~18% where Plyr's
+        // control bar lives.
+        var positions = [
+            { top: "6%", left: "6%" },
+            { top: "6%", left: "70%" },
+            { top: "40%", left: "6%" },
+            { top: "40%", left: "60%" },
+            { top: "70%", left: "35%" },
+            { top: "20%", left: "40%" },
+        ];
+        var i = 0;
+
+        function place() {
+            var pos = positions[i % positions.length];
+            mark.style.top = pos.top;
+            mark.style.left = pos.left;
+            i++;
+        }
+
+        place();
+        setInterval(place, 8000);
     }
 
     function init() {

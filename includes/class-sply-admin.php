@@ -141,6 +141,18 @@ final class SPLY_Admin
                         </p>
                     </td>
                 </tr>
+                <tr>
+                    <th><label for="sply_watermark_enabled"><?php esc_html_e('Viewer email watermark', 'secureplay'); ?></label></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="sply_watermark_enabled" <?php checked($settings['watermark_enabled']); ?> />
+                            <?php esc_html_e('Overlay the logged-in viewer\'s email on the video, at a shifting position', 'secureplay'); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('A leak deterrent, not a download blocker — it doesn\'t stop screen recording, but a leaked video can be traced back to whoever watched it.', 'secureplay'); ?>
+                        </p>
+                    </td>
+                </tr>
             </table>
             <p>
                 <button type="button" class="button button-primary" id="sply-save-settings"><?php esc_html_e('Save settings', 'secureplay'); ?></button>
@@ -187,11 +199,13 @@ final class SPLY_Admin
         $color = isset($_POST['default_color']) ? sanitize_hex_color(wp_unslash($_POST['default_color'])) : '';
         $duration = isset($_POST['segment_duration']) ? (int) $_POST['segment_duration'] : 6;
         $ffmpegPath = isset($_POST['ffmpeg_path']) ? sanitize_text_field(wp_unslash($_POST['ffmpeg_path'])) : 'ffmpeg';
+        $watermarkEnabled = isset($_POST['watermark_enabled']) && $_POST['watermark_enabled'] === '1';
 
         SPLY_Settings::update([
             'default_color' => $color ?: SPLY_Settings::defaults()['default_color'],
             'segment_duration' => max(2, min(30, $duration)),
             'ffmpeg_path' => $ffmpegPath ?: 'ffmpeg',
+            'watermark_enabled' => $watermarkEnabled,
         ]);
 
         wp_send_json_success(['message' => __('Settings saved.', 'secureplay')]);

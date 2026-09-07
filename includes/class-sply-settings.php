@@ -15,6 +15,7 @@ final class SPLY_Settings
             'default_color' => '#c9a130',
             'ffmpeg_path' => 'ffmpeg',
             'segment_duration' => 6,
+            'watermark_enabled' => false,
         ];
     }
 

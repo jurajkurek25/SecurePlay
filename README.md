@@ -74,6 +74,30 @@ add_filter('sply_can_view_video', function (bool $canView, int $postId, int $use
 Return `false` to deny — the key endpoint responds with a 403 and the
 player simply never starts.
 
+## Viewer email watermark
+
+Turn on **Videos → Settings → Viewer email watermark** to overlay the
+logged-in viewer's email on the video, at a shifting position that
+changes every few seconds.
+
+This is a **leak deterrent, not a download blocker**: nothing running in
+a browser can detect or stop screen recording, and no video player on the
+web — including Netflix — can either without licensed hardware DRM
+(Widevine L1/FairPlay + HDCP), which is a different product tier entirely.
+What the watermark does instead is make a leaked recording traceable back
+to whoever watched it, which is usually enough of a deterrent on its own.
+
+For anonymous visitors (no WordPress account, e.g. a WooCommerce guest
+checkout) there's no email to show by default, so no watermark renders
+unless you supply one via the `sply_watermark_identity` filter:
+
+```php
+add_filter('sply_watermark_identity', function (string $identity, int $postId, int $userId) {
+    // Example: pull the email from a guest checkout stored elsewhere.
+    return $identity ?: my_plugin_get_guest_email();
+}, 10, 3);
+```
+
 ## Licensing
 
 Activation uses [Gumroad's native License Key API](https://help.gumroad.com/article/76-license-keys) —

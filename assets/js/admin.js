@@ -56,6 +56,7 @@
                 default_color: $("#sply_default_color").val(),
                 segment_duration: $("#sply_segment_duration").val(),
                 ffmpeg_path: $("#sply_ffmpeg_path").val(),
+                watermark_enabled: $("#sply_watermark_enabled").is(":checked") ? "1" : "0",
             })
                 .done(function (res) {
                     $msg.text(res.data && res.data.message ? res.data.message : "");
