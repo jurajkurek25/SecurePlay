@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  */
 final class SDSP_License
 {
-    const PRODUCT_PERMALINK = 'hfghzi';
+    const PRODUCT_ID = '5kO1gjKF7HCv2QARDaMh9g==';
     const VERIFY_URL = 'https://api.gumroad.com/v2/licenses/verify';
     const MAX_SEATS = 1;
 
@@ -103,7 +103,7 @@ final class SDSP_License
         $response = wp_remote_post(self::VERIFY_URL, [
             'timeout' => 15,
             'body' => [
-                'product_permalink' => self::PRODUCT_PERMALINK,
+                'product_id' => self::PRODUCT_ID,
                 'license_key' => $licenseKey,
                 'increment_uses_count' => $increment ? 'true' : 'false',
             ],
