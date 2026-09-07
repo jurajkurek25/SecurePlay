@@ -9,19 +9,22 @@ if (!defined('ABSPATH')) {
  * issuer/verifier (POST /v2/licenses/verify) — this plugin never runs its
  * own license server.
  *
- * Gumroad's API has no native per-seat/domain lock: every verify call
- * returns a cumulative `uses` counter that increments once per call made
- * with increment_uses_count=true. So a genuinely new activation increments
- * and is rejected if `uses` exceeds MAX_SEATS; a re-check of a key this
- * exact site already activated must NOT increment (or every daily cron
- * tick would burn a "seat" and eventually lock the paying customer out of
- * their own site).
+ * There's deliberately no "already active on another site" enforcement
+ * here. Gumroad's `uses` counter only ever increments — there is no API
+ * call that decrements it — so a check like "reject if uses > 1" looks
+ * reasonable at first but is actually unfixable: the moment a customer
+ * legitimately deactivates on one site and activates on a new one (a
+ * domain migration, a reinstall, moving to a new host), `uses` ticks up
+ * again and permanently exceeds the limit, locking out someone who did
+ * nothing wrong. Since this plugin has no separate license server of its
+ * own to track real seat state, activation here only validates that the
+ * key is genuine and still in good standing (not refunded, chargebacked,
+ * or cancelled) — it does not attempt to hard-enforce single-site use.
  */
 final class SPLY_License
 {
     const PRODUCT_ID = '5kO1gjKF7HCv2QARDaMh9g==';
     const VERIFY_URL = 'https://api.gumroad.com/v2/licenses/verify';
-    const MAX_SEATS = 1;
 
     const OPTION_KEY = 'sply_license_key';
     const OPTION_STATUS = 'sply_license_status';
@@ -127,12 +130,6 @@ final class SPLY_License
         }
         if (!empty($purchase['subscription_cancelled_at'])) {
             return ['success' => false, 'message' => __('The subscription for this license has been cancelled.', 'secureplay')];
-        }
-
-        $uses = isset($body['uses']) ? (int) $body['uses'] : 1;
-        $isOwnPriorActivation = ($licenseKey === self::key()) && self::is_active();
-        if ($uses > self::MAX_SEATS && !$isOwnPriorActivation) {
-            return ['success' => false, 'message' => __('This license is already active on another site.', 'secureplay')];
         }
 
         return ['success' => true, 'message' => 'ok', 'email' => $purchase['email'] ?? ''];

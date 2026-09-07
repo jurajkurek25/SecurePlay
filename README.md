@@ -101,13 +101,15 @@ add_filter('sply_watermark_identity', function (string $identity, int $postId, i
 ## Licensing
 
 Activation uses [Gumroad's native License Key API](https://help.gumroad.com/article/76-license-keys) —
-there is no separate license server to run or maintain. One license key
-activates on one site at a time; activating it elsewhere requires
-deactivating it here first (**Videos → Settings → Deactivate**). A daily
-background check re-verifies the key so a refund or subscription
-cancellation on Gumroad's side is caught automatically — it never breaks
-already-published videos, it only blocks processing new ones until the
-license is renewed.
+there is no separate license server to run or maintain. Activating checks
+that the key is genuine and still in good standing (not refunded,
+charged back, or cancelled); it doesn't hard-enforce single-site use,
+since Gumroad's API has no way to release a "seat" once used — a check
+like that would permanently lock out anyone who legitimately migrates
+domains or reinstalls. A daily background check re-verifies the key so a
+refund or cancellation on Gumroad's side is caught automatically — it
+never breaks already-published videos, it only blocks processing new
+ones until the license is renewed.
 
 ## Architecture
 
