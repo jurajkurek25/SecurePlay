@@ -25,14 +25,26 @@ server rejects a logged-out visitor by default.
 
 1. Install and activate both SecurePlay and Paid Memberships Pro.
 2. Install and activate this add-on.
-3. Upload each tier's video normally under **Videos → Add Video** (one
+3. Go to **Videos → PMPro Add-on** and activate this add-on's own license
+   key — it's a separate product from the main SecurePlay plugin, so it
+   has its own key from its own purchase receipt.
+4. Upload each tier's video normally under **Videos → Add Video** (one
    `sply_video` post per video, same as always).
-4. Open the video whose shortcode you'll actually place on the page, and
+5. Open the video whose shortcode you'll actually place on the page, and
    in **Membership Tiers**, map each PMPro level to the video it should
    show. Leave a level unmapped to fall back to the locked message for
    visitors who only have that level.
-5. Drop `[secureplay id="123"]` (the ID of the video you configured tiers
+6. Drop `[secureplay id="123"]` (the ID of the video you configured tiers
    on) into the page — everything else happens automatically per viewer.
+
+## Licensing
+
+Same model as the main plugin: a [Gumroad License Key](https://help.gumroad.com/article/76-license-keys),
+activated under **Videos → PMPro Add-on**, no separate license server.
+Licensing only gates the ability to add or change tier mappings — an
+already-configured site keeps working exactly as set up even if this
+add-on's own license lapses, it just can't accept new changes until
+reactivated.
 
 ## How it fits together
 

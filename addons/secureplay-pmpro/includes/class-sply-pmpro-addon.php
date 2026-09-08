@@ -85,6 +85,10 @@ final class SPLY_PMPRO_Addon
             return;
         }
 
+        if (!SPLY_PMPRO_License::is_active()) {
+            echo '<p style="color:#b32d2e">' . esc_html__('This add-on\'s license is not active — changes made below won\'t be saved until you activate it under Videos → PMPro Add-on.', 'secureplay-pmpro') . '</p>';
+        }
+
         echo '<p class="description">' . esc_html__('Pick which video plays for each level. Leave a level blank to give it no special video — visitors with only that level (or no level) will see the message below instead of a player.', 'secureplay-pmpro') . '</p>';
 
         echo '<table class="widefat sply-pmpro-table"><thead><tr>';
@@ -122,39 +126,46 @@ final class SPLY_PMPRO_Addon
             return;
         }
 
-        $previousVariants = $this->get_variants($postId);
+        // Licensing only gates the ability to add or change tier mappings
+        // here, same as core SecurePlay only blocks new video processing
+        // on an inactive license — an already-configured site keeps
+        // working even if this add-on's own license lapses.
+        if (SPLY_PMPRO_License::is_active()) {
+            $previousVariants = $this->get_variants($postId);
 
-        $rawVideoByLevel = isset($_POST['sply_pmpro_video']) && is_array($_POST['sply_pmpro_video'])
-            ? wp_unslash($_POST['sply_pmpro_video'])
-            : [];
+            $rawVideoByLevel = isset($_POST['sply_pmpro_video']) && is_array($_POST['sply_pmpro_video'])
+                ? wp_unslash($_POST['sply_pmpro_video'])
+                : [];
 
-        $variants = [];
-        foreach ($rawVideoByLevel as $levelId => $videoId) {
-            $levelId = (int) $levelId;
-            $videoId = (int) $videoId;
-            if ($levelId > 0 && $videoId > 0) {
-                $variants[$levelId] = $videoId;
+            $variants = [];
+            foreach ($rawVideoByLevel as $levelId => $videoId) {
+                $levelId = (int) $levelId;
+                $videoId = (int) $videoId;
+                if ($levelId > 0 && $videoId > 0) {
+                    $variants[$levelId] = $videoId;
+                }
             }
-        }
 
-        // Drop the reverse-index from videos no longer used as anyone's
-        // target for this parent, so an unmapped video doesn't stay
-        // gated behind a level it's no longer assigned to.
-        foreach ($previousVariants as $oldLevelId => $oldVideoId) {
-            $stillUsed = ($variants[$oldLevelId] ?? null) === $oldVideoId;
-            if (!$stillUsed) {
-                delete_post_meta($oldVideoId, self::META_REQUIRED_LEVELS);
+            // Drop the reverse-index from videos no longer used as
+            // anyone's target for this parent, so an unmapped video
+            // doesn't stay gated behind a level it's no longer assigned
+            // to.
+            foreach ($previousVariants as $oldLevelId => $oldVideoId) {
+                $stillUsed = ($variants[$oldLevelId] ?? null) === $oldVideoId;
+                if (!$stillUsed) {
+                    delete_post_meta($oldVideoId, self::META_REQUIRED_LEVELS);
+                }
             }
-        }
 
-        foreach ($variants as $levelId => $videoId) {
-            update_post_meta($videoId, self::META_REQUIRED_LEVELS, [$levelId]);
-        }
+            foreach ($variants as $levelId => $videoId) {
+                update_post_meta($videoId, self::META_REQUIRED_LEVELS, [$levelId]);
+            }
 
-        if ($variants) {
-            update_post_meta($postId, self::META_VARIANTS, $variants);
-        } else {
-            delete_post_meta($postId, self::META_VARIANTS);
+            if ($variants) {
+                update_post_meta($postId, self::META_VARIANTS, $variants);
+            } else {
+                delete_post_meta($postId, self::META_VARIANTS);
+            }
         }
 
         $message = isset($_POST['sply_pmpro_locked_message']) ? sanitize_textarea_field(wp_unslash($_POST['sply_pmpro_locked_message'])) : '';
