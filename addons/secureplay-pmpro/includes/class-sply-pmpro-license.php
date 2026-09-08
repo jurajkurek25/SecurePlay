@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  */
 final class SPLY_PMPRO_License
 {
-    const PRODUCT_PERMALINK = 'secureplay-pmpro';
+    const PRODUCT_ID = 'VylAVzmk1bz8eL_51EEjYQ==';
     const VERIFY_URL = 'https://api.gumroad.com/v2/licenses/verify';
 
     const OPTION_KEY = 'sply_pmpro_license_key';
@@ -97,7 +97,7 @@ final class SPLY_PMPRO_License
         $response = wp_remote_post(self::VERIFY_URL, [
             'timeout' => 15,
             'body' => [
-                'product_permalink' => self::PRODUCT_PERMALINK,
+                'product_id' => self::PRODUCT_ID,
                 'license_key' => $licenseKey,
                 'increment_uses_count' => $increment ? 'true' : 'false',
             ],
@@ -109,12 +109,6 @@ final class SPLY_PMPRO_License
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($body) || empty($body['success'])) {
-            // If Gumroad rejects product_permalink and asks for product_id
-            // instead (it did for the parent plugin's own product), that
-            // exact message surfaces here — swap PRODUCT_PERMALINK above
-            // for a PRODUCT_ID constant + 'product_id' body key the same
-            // way class-sply-license.php does, using the ID the error
-            // names.
             $message = is_array($body) && !empty($body['message'])
                 ? $body['message']
                 : __('Could not verify this license key.', 'secureplay-pmpro');
