@@ -71,11 +71,15 @@ final class SPLY_PMPRO_Addon
         $variants = $this->get_variants($post->ID);
         $message = get_post_meta($post->ID, self::META_LOCKED_MESSAGE, true);
 
-        $otherVideos = get_posts([
+        // Deliberately does not exclude $post->ID: a video can serve as
+        // its own tier's content (e.g. the Free level just plays this
+        // same video while Premium plays a different one), and excluding
+        // it left the dropdown with nothing to pick from until at least
+        // two other videos existed.
+        $availableVideos = get_posts([
             'post_type' => SPLY_Post_Type::POST_TYPE,
             'post_status' => 'any',
             'numberposts' => -1,
-            'exclude' => [$post->ID],
             'orderby' => 'title',
             'order' => 'ASC',
         ]);
@@ -101,7 +105,7 @@ final class SPLY_PMPRO_Addon
             echo '<tr><td>' . esc_html($level->name) . '</td><td>';
             echo '<select name="sply_pmpro_video[' . (int) $level->id . ']">';
             echo '<option value="0">' . esc_html__('— No video for this level —', 'secureplay-pmpro') . '</option>';
-            foreach ($otherVideos as $video) {
+            foreach ($availableVideos as $video) {
                 echo '<option value="' . (int) $video->ID . '" ' . selected($selected, $video->ID, false) . '>' .
                     esc_html($video->post_title ?: ('#' . $video->ID)) . '</option>';
             }
