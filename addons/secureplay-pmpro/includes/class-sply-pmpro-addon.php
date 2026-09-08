@@ -30,6 +30,7 @@ final class SPLY_PMPRO_Addon
     const META_REQUIRED_LEVELS = '_sply_pmpro_required_levels';
 
     private static ?self $instance = null;
+    private static bool $isSaving = false;
     private bool $frontStylesPrinted = false;
 
     public static function instance(): self
@@ -92,24 +93,46 @@ final class SPLY_PMPRO_Addon
         if (!SPLY_PMPRO_License::is_active()) {
             echo '<p style="color:#b32d2e">' . esc_html__('This add-on\'s license is not active — changes made below won\'t be saved until you activate it under Videos → PMPro Add-on.', 'secureplay-pmpro') . '</p>';
         }
+        if (!SPLY_License::is_active()) {
+            echo '<p style="color:#b32d2e">' . esc_html__('The main SecurePlay license is not active — video files uploaded below won\'t be processed until it\'s activated under Videos → Settings.', 'secureplay-pmpro') . '</p>';
+        }
 
-        echo '<p class="description">' . esc_html__('Pick which video plays for each level. Leave a level blank to give it no special video — visitors with only that level (or no level) will see the message below instead of a player.', 'secureplay-pmpro') . '</p>';
+        echo '<p class="description">' . esc_html__('Upload a video straight into a level, or pick one you already uploaded elsewhere. Leave a level with neither to give it no special video — visitors with only that level (or no level) will see the message below instead of a player.', 'secureplay-pmpro') . '</p>';
 
         echo '<table class="widefat sply-pmpro-table"><thead><tr>';
         echo '<th>' . esc_html__('Level', 'secureplay-pmpro') . '</th>';
-        echo '<th>' . esc_html__('Video for this level', 'secureplay-pmpro') . '</th>';
+        echo '<th>' . esc_html__('Upload a video for this level', 'secureplay-pmpro') . '</th>';
+        echo '<th>' . esc_html__('Or use an already-uploaded video', 'secureplay-pmpro') . '</th>';
         echo '</tr></thead><tbody>';
 
         foreach ($levels as $level) {
             $selected = $variants[$level->id] ?? 0;
-            echo '<tr><td>' . esc_html($level->name) . '</td><td>';
+            $currentVideo = $selected ? get_post($selected) : null;
+
+            echo '<tr><td>' . esc_html($level->name) . '</td>';
+
+            echo '<td>';
+            echo '<input type="file" name="sply_pmpro_upload[' . (int) $level->id . ']" accept="video/*" />';
+            if ($currentVideo) {
+                echo '<p class="description">' .
+                    sprintf(
+                        /* translators: %s: video title */
+                        esc_html__('Currently: %s. Uploading a new file here replaces it.', 'secureplay-pmpro'),
+                        esc_html($currentVideo->post_title ?: ('#' . $currentVideo->ID))
+                    ) .
+                    '</p>';
+            }
+            echo '</td>';
+
+            echo '<td>';
             echo '<select name="sply_pmpro_video[' . (int) $level->id . ']">';
             echo '<option value="0">' . esc_html__('— No video for this level —', 'secureplay-pmpro') . '</option>';
             foreach ($availableVideos as $video) {
                 echo '<option value="' . (int) $video->ID . '" ' . selected($selected, $video->ID, false) . '>' .
                     esc_html($video->post_title ?: ('#' . $video->ID)) . '</option>';
             }
-            echo '</select></td></tr>';
+            echo '</select>';
+            echo '</td></tr>';
         }
 
         echo '</tbody></table>';
@@ -123,12 +146,25 @@ final class SPLY_PMPRO_Addon
 
     public function handle_save(int $postId): void
     {
+        // handle_level_uploads() below creates a new sply_video post per
+        // uploaded file via wp_insert_post() — which fires this exact
+        // save_post_sply_video hook again for that new post, on the same
+        // request, with the same $_POST still full of upload fields. Left
+        // unguarded that recurses without end, each pass creating another
+        // post from the same uploads. This flag makes any such re-entrant
+        // call into handle_save() during that process a no-op.
+        if (self::$isSaving) {
+            return;
+        }
+
         if (!isset($_POST['sply_pmpro_nonce']) || !wp_verify_nonce($_POST['sply_pmpro_nonce'], 'sply_pmpro_save')) {
             return;
         }
         if (!current_user_can('edit_post', $postId) || wp_is_post_autosave($postId) || wp_is_post_revision($postId)) {
             return;
         }
+
+        self::$isSaving = true;
 
         // Licensing only gates the ability to add or change tier mappings
         // here, same as core SecurePlay only blocks new video processing
@@ -148,6 +184,16 @@ final class SPLY_PMPRO_Addon
                 if ($levelId > 0 && $videoId > 0) {
                     $variants[$levelId] = $videoId;
                 }
+            }
+
+            // A direct upload for a level takes over that level's mapping,
+            // overriding whatever the dropdown said — the upload is the
+            // more deliberate action. Reuses the exact same encode
+            // pipeline as core's own video upload, so it's gated behind
+            // core's own license the same way core's upload box is.
+            $uploadedVariants = $this->handle_level_uploads($postId);
+            foreach ($uploadedVariants as $levelId => $videoId) {
+                $variants[$levelId] = $videoId;
             }
 
             // Drop the reverse-index from videos no longer used as
@@ -178,6 +224,84 @@ final class SPLY_PMPRO_Addon
         } else {
             delete_post_meta($postId, self::META_LOCKED_MESSAGE);
         }
+
+        self::$isSaving = false;
+    }
+
+    /**
+     * Creates a new sply_video post for each level that got a direct file
+     * upload here, and runs it through the exact same encode pipeline as
+     * core's own "Videos → Add Video" upload box — so it's gated behind
+     * core's own license the same way, and shows up in the Videos list
+     * like any other video once it's ready.
+     *
+     * @return array<int,int> level_id => newly created video's post ID
+     */
+    private function handle_level_uploads(int $parentId): array
+    {
+        if (empty($_FILES['sply_pmpro_upload']['name']) || !is_array($_FILES['sply_pmpro_upload']['name'])) {
+            return [];
+        }
+
+        if (!SPLY_License::is_active()) {
+            return [];
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        $parentTitle = get_the_title($parentId) ?: ('#' . $parentId);
+        $created = [];
+
+        foreach ($_FILES['sply_pmpro_upload']['name'] as $levelId => $fileName) {
+            $levelId = (int) $levelId;
+            if ($levelId <= 0 || $fileName === '') {
+                continue;
+            }
+
+            $file = [
+                'name' => $_FILES['sply_pmpro_upload']['name'][$levelId],
+                'type' => $_FILES['sply_pmpro_upload']['type'][$levelId],
+                'tmp_name' => $_FILES['sply_pmpro_upload']['tmp_name'][$levelId],
+                'error' => $_FILES['sply_pmpro_upload']['error'][$levelId],
+                'size' => $_FILES['sply_pmpro_upload']['size'][$levelId],
+            ];
+
+            if ((int) $file['error'] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $level = function_exists('pmpro_getLevel') ? pmpro_getLevel($levelId) : false;
+            $levelName = $level ? $level->name : sprintf(__('Level %d', 'secureplay-pmpro'), $levelId);
+
+            $videoId = wp_insert_post([
+                'post_type' => SPLY_Post_Type::POST_TYPE,
+                'post_title' => $parentTitle . ' — ' . $levelName,
+                'post_status' => 'publish',
+            ]);
+
+            if (is_wp_error($videoId) || !$videoId) {
+                continue;
+            }
+
+            $uploaded = wp_handle_upload($file, ['test_form' => false]);
+
+            if (isset($uploaded['error'])) {
+                update_post_meta($videoId, SPLY_Post_Type::META_STATUS, 'error');
+                update_post_meta($videoId, SPLY_Post_Type::META_ERROR, $uploaded['error']);
+                continue;
+            }
+
+            update_post_meta($videoId, SPLY_Post_Type::META_STATUS, 'processing');
+            update_post_meta($videoId, '_sply_source_file', $uploaded['file']);
+            wp_schedule_single_event(time(), 'sply_process_video', [$videoId]);
+            if (function_exists('spawn_cron')) {
+                spawn_cron();
+            }
+
+            $created[$levelId] = $videoId;
+        }
+
+        return $created;
     }
 
     /** @return array<int,int> level_id => video_id */

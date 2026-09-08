@@ -28,13 +28,13 @@ server rejects a logged-out visitor by default.
 3. Go to **Videos → PMPro Add-on** and activate this add-on's own license
    key — it's a separate product from the main SecurePlay plugin, so it
    has its own key from its own purchase receipt.
-4. Upload each tier's video normally under **Videos → Add Video** (one
-   `sply_video` post per video, same as always).
-5. Open the video whose shortcode you'll actually place on the page, and
-   in **Membership Tiers**, map each PMPro level to the video it should
-   show. Leave a level unmapped to fall back to the locked message for
-   visitors who only have that level.
-6. Drop `[secureplay id="123"]` (the ID of the video you configured tiers
+4. Create (or open) the video whose shortcode you'll place on the page,
+   and in **Membership Tiers**, either upload a video file directly for
+   each level or pick one you already uploaded elsewhere. Leave a level
+   with neither to fall back to the locked message for visitors who only
+   have that level. Uploading a file for a level creates its own `sply_video`
+   post automatically — you don't need to create those separately first.
+5. Drop `[secureplay id="123"]` (the ID of the video you configured tiers
    on) into the page — everything else happens automatically per viewer.
 
 ## Licensing
