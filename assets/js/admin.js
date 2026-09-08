@@ -4,6 +4,19 @@
     $(function () {
         $(".sply-color-field").wpColorPicker();
 
+        $("#sply-add-chapter").on("click", function () {
+            var template = document.getElementById("sply-chapter-row-template");
+            if (!template) {
+                return;
+            }
+            var row = template.content.firstElementChild.cloneNode(true);
+            document.getElementById("sply-chapters-rows").appendChild(row);
+        });
+
+        $(document).on("click", ".sply-remove-chapter", function () {
+            $(this).closest(".sply-chapter-row").remove();
+        });
+
         $("#sply-activate-license").on("click", function () {
             var $btn = $(this);
             var $msg = $("#sply-license-message");

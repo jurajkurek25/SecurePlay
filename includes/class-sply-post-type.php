@@ -17,6 +17,7 @@ final class SPLY_Post_Type
     const META_OUTPUT_DIR = '_sply_output_dir';
     const META_COLOR = '_sply_color';
     const META_ERROR = '_sply_error';
+    const META_CHAPTERS = '_sply_chapters';
 
     private static ?self $instance = null;
 
@@ -74,6 +75,7 @@ final class SPLY_Post_Type
     public function add_meta_boxes(): void
     {
         add_meta_box('sply_upload', __('Video File', 'secureplay'), [$this, 'render_upload_box'], self::POST_TYPE, 'normal', 'high');
+        add_meta_box('sply_chapters', __('Chapters', 'secureplay'), [$this, 'render_chapters_box'], self::POST_TYPE, 'normal', 'default');
         add_meta_box('sply_appearance', __('Appearance', 'secureplay'), [$this, 'render_appearance_box'], self::POST_TYPE, 'side');
         add_meta_box('sply_embed', __('Embed', 'secureplay'), [$this, 'render_embed_box'], self::POST_TYPE, 'side');
     }
@@ -104,6 +106,40 @@ final class SPLY_Post_Type
         }
     }
 
+    /**
+     * A YouTube-style chapter list: timestamp + title pairs, shown to
+     * viewers as a clickable list under the player with matching markers
+     * on the progress bar.
+     */
+    public function render_chapters_box(WP_Post $post): void
+    {
+        $chapters = self::get_chapters($post->ID);
+        echo '<div id="sply-chapters-rows">';
+        if ($chapters) {
+            foreach ($chapters as $chapter) {
+                $this->render_chapter_row((int) $chapter['time'], (string) $chapter['title']);
+            }
+        }
+        echo '</div>';
+
+        echo '<template id="sply-chapter-row-template">';
+        $this->render_chapter_row(0, '');
+        echo '</template>';
+
+        echo '<p><button type="button" class="button" id="sply-add-chapter">' . esc_html__('+ Add chapter', 'secureplay') . '</button></p>';
+        echo '<p class="description">' . esc_html__('Format: mm:ss or h:mm:ss (e.g. 1:23 or 1:02:15). Rows with no title are ignored.', 'secureplay') . '</p>';
+    }
+
+    private function render_chapter_row(int $seconds, string $title): void
+    {
+        $timeStr = ($seconds === 0 && $title === '') ? '' : self::format_seconds($seconds);
+        echo '<div class="sply-chapter-row">';
+        echo '<input type="text" class="small-text" name="sply_chapter_time[]" value="' . esc_attr($timeStr) . '" placeholder="0:00" />';
+        echo '<input type="text" name="sply_chapter_title[]" value="' . esc_attr($title) . '" placeholder="' . esc_attr__('Chapter title', 'secureplay') . '" />';
+        echo '<button type="button" class="button-link sply-remove-chapter" aria-label="' . esc_attr__('Remove chapter', 'secureplay') . '">&times;</button>';
+        echo '</div>';
+    }
+
     public function render_appearance_box(WP_Post $post): void
     {
         $color = get_post_meta($post->ID, self::META_COLOR, true);
@@ -128,6 +164,7 @@ final class SPLY_Post_Type
 
         $color = isset($_POST['sply_color']) ? sanitize_hex_color(wp_unslash($_POST['sply_color'])) : '';
         update_post_meta($postId, self::META_COLOR, $color ?: '');
+        update_post_meta($postId, self::META_CHAPTERS, $this->collect_chapters_from_request());
 
         if (empty($_FILES['sply_video_file']['name'])) {
             return;
@@ -224,6 +261,71 @@ final class SPLY_Post_Type
         $uploadDir = wp_upload_dir();
         $relative = str_replace($uploadDir['basedir'], '', $dir);
         return trailingslashit($uploadDir['baseurl']) . ltrim($relative, '/') . '/index.m3u8';
+    }
+
+    /** @return array<int, array{time:int,title:string}> */
+    public static function get_chapters(int $postId): array
+    {
+        $chapters = get_post_meta($postId, self::META_CHAPTERS, true);
+        return is_array($chapters) ? $chapters : [];
+    }
+
+    /** @return array<int, array{time:int,title:string}> parsed, sorted, title-less rows dropped */
+    private function collect_chapters_from_request(): array
+    {
+        $rawTimes = isset($_POST['sply_chapter_time']) ? (array) wp_unslash($_POST['sply_chapter_time']) : [];
+        $rawTitles = isset($_POST['sply_chapter_title']) ? (array) wp_unslash($_POST['sply_chapter_title']) : [];
+
+        $chapters = [];
+        foreach ($rawTimes as $i => $rawTime) {
+            $title = isset($rawTitles[$i]) ? sanitize_text_field($rawTitles[$i]) : '';
+            $seconds = self::parse_time($rawTime);
+            if ($title === '' || $seconds === null) {
+                continue;
+            }
+            $chapters[] = ['time' => $seconds, 'title' => $title];
+        }
+
+        usort($chapters, fn($a, $b) => $a['time'] <=> $b['time']);
+
+        return $chapters;
+    }
+
+    private static function parse_time(string $raw): ?int
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+        if (ctype_digit($raw)) {
+            return (int) $raw;
+        }
+
+        $rawParts = explode(':', $raw);
+        if (count($rawParts) < 2 || count($rawParts) > 3) {
+            return null;
+        }
+        foreach ($rawParts as $part) {
+            if (!ctype_digit($part)) {
+                return null;
+            }
+        }
+
+        $seconds = 0;
+        foreach ($rawParts as $part) {
+            $seconds = $seconds * 60 + (int) $part;
+        }
+
+        return max(0, $seconds);
+    }
+
+    private static function format_seconds(int $seconds): string
+    {
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+
+        return $h > 0 ? sprintf('%d:%02d:%02d', $h, $m, $s) : sprintf('%d:%02d', $m, $s);
     }
 
     public static function thumbnail_url(int $postId): ?string

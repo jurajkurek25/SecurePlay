@@ -51,6 +51,7 @@ final class SPLY_Admin
 
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
+        wp_enqueue_style('sply-admin', SPLY_URL . 'assets/css/admin.css', [], SPLY_VERSION);
 
         wp_enqueue_script('sply-admin', SPLY_URL . 'assets/js/admin.js', ['jquery', 'wp-color-picker'], SPLY_VERSION, true);
         wp_localize_script('sply-admin', 'splyAdmin', [

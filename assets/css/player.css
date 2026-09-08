@@ -29,3 +29,65 @@
 .sply-player-wrap video::-internal-media-controls-download-button {
     display: none;
 }
+
+.sply-chapter-marker {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 9px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    z-index: 3;
+}
+
+.sply-chapter-marker.is-active {
+    background: var(--sply-color, #c9a130);
+}
+
+.sply-chapters-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.sply-chapter {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sply-chapter:hover {
+    background: rgba(127, 127, 127, 0.12);
+}
+
+.sply-chapter.is-active {
+    background: rgba(127, 127, 127, 0.2);
+    font-weight: 600;
+}
+
+.sply-chapter-time {
+    flex-shrink: 0;
+    color: var(--sply-color, #c9a130);
+    font-variant-numeric: tabular-nums;
+}
+
+.sply-chapter-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

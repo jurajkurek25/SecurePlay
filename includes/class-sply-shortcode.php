@@ -60,10 +60,11 @@ final class SPLY_Shortcode
         $thumbnailUrl = SPLY_Post_Type::thumbnail_url($postId);
         $elementId = 'sply-player-' . $postId;
         $watermark = SPLY_Settings::get('watermark_enabled') ? $this->watermark_identity($postId) : '';
+        $chapters = SPLY_Post_Type::get_chapters($postId);
 
         ob_start();
         ?>
-        <div class="sply-player-wrap" style="--sply-color: <?php echo esc_attr($color); ?>">
+        <div class="sply-player-wrap" style="--sply-color: <?php echo esc_attr($color); ?>" <?php if ($chapters) : ?>data-sply-chapters="<?php echo esc_attr(wp_json_encode($chapters)); ?>"<?php endif; ?>>
             <video
                 id="<?php echo esc_attr($elementId); ?>"
                 class="sply-player"

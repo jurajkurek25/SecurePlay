@@ -57,6 +57,15 @@ Market it honestly as "protects against casual downloading," not
 `color` overrides both the video's own color setting and the plugin's
 global default (**Videos → Settings**).
 
+### Chapters
+
+Each video's edit screen has a **Chapters** box — add timestamped rows
+(`mm:ss` or `h:mm:ss`, e.g. `1:23` or `1:02:15`) with a title, the same
+way YouTube chapters work. On the front end this shows as a clickable
+chapter list under the player plus markers on the progress bar; clicking
+either jumps playback to that point. Rows left without a title are
+ignored, so you can add a few and fill them in later.
+
 ## Gating who can watch
 
 By default, any logged-in WordPress user can play a video once they have
