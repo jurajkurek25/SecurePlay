@@ -30,8 +30,25 @@ final class SPLY_Shortcode
             'color' => '',
         ], $atts, 'secureplay');
 
-        $postId = (int) $atts['id'];
-        $post = $postId ? get_post($postId) : null;
+        $requestedId = (int) $atts['id'];
+
+        /**
+         * Lets an add-on swap which video actually plays for this
+         * shortcode instance — e.g. a different video per membership
+         * tier. Return 0 to mean "this viewer gets no video," which pairs
+         * with `sply_locked_html` below to show something else instead
+         * (a login/upgrade prompt). Left untouched, behavior is unchanged.
+         *
+         * @param int   $postId  The sply_video post to actually render.
+         * @param array $atts    The shortcode's resolved attributes.
+         */
+        $postId = (int) apply_filters('sply_resolve_video_id', $requestedId, $atts);
+
+        if ($postId === 0) {
+            return (string) apply_filters('sply_locked_html', '', $requestedId, $atts);
+        }
+
+        $post = get_post($postId);
 
         if (!$post || $post->post_type !== SPLY_Post_Type::POST_TYPE) {
             return current_user_can('edit_posts')

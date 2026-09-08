@@ -83,6 +83,15 @@ add_filter('sply_can_view_video', function (bool $canView, int $postId, int $use
 Return `false` to deny — the key endpoint responds with a 403 and the
 player simply never starts.
 
+## Add-ons
+
+- **[SecurePlay — Paid Memberships Pro](addons/secureplay-pmpro)** — shows
+  a different video per PMPro membership level on the same shortcode, and
+  a login/upgrade prompt for anyone without a matching level. Built
+  entirely on the `sply_resolve_video_id`, `sply_locked_html`, and
+  `sply_can_view_video` hooks above — a template for building the same
+  kind of integration against any other membership or e-commerce plugin.
+
 ## Viewer email watermark
 
 Turn on **Videos → Settings → Viewer email watermark** to overlay the

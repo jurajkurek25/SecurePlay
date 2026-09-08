@@ -1,0 +1,9 @@
+.sply-pmpro-table td,
+.sply-pmpro-table th {
+    padding: 8px 10px;
+}
+
+.sply-pmpro-table select {
+    width: 100%;
+    max-width: 360px;
+}
